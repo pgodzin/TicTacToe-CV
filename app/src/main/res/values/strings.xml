@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Tic Tac Toe</string>
+
+    <string name="restart">Restart</string>
+    <string name="tictactoe">Tic Tac Toe</string>
+    <string name="title_activity_saved">SavedActivity</string>
+</resources>

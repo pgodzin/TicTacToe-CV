@@ -10,7 +10,7 @@
         android:layout_height="360dp"
         class="com.example.pgodzin.tictactoe.TicTacToeView"
         android:id="@+id/ttt"
-        android:layout_gravity="center|bottom"
+        android:layout_gravity="center_horizontal|bottom"
         android:layout_marginBottom="32dp" />
 
     <TextView
@@ -25,11 +25,11 @@
 
     <ImageView
         android:layout_width="360dp"
-        android:layout_height="100dp"
+        android:layout_height="50dp"
         android:id="@+id/imageView"
         android:layout_gravity="left|top"
         android:layout_marginTop="36dp"
-        android:layout_marginLeft="4dp"
+        android:layout_marginLeft="8dp"
         android:layout_marginRight="4dp"
         android:background="@drawable/shapes" />
 

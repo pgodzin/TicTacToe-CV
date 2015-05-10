@@ -1,5 +1,6 @@
 package com.example.pgodzin.tictactoe;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -10,26 +11,43 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.Map;
 
 
 public class MainActivity extends ActionBarActivity {
+
+    private int mode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Intent i = getIntent();
+        mode = i.getIntExtra("mode", -1);
+        TicTacToeView tttView = (TicTacToeView) findViewById(R.id.ttt);
+        tttView.mode = mode;
     }
 
-/*    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            getSupportActionBar().hide();
-        } else {
-            getSupportActionBar().show();
-        }
-    }*/
+    public void updatePlayerShapes(int playerTurn, Map<Integer, String> shapeMap, int moveShape){
+        ImageView shapes = (ImageView) findViewById(R.id.shape_list);
+        shapes.setVisibility(View.GONE);
+        TextView selectText = (TextView) findViewById(R.id.select_text);
+        selectText.setVisibility(View.GONE);
+        TextView p1Shape = (TextView) findViewById(R.id.p1_shape);
+        p1Shape.setVisibility(View.VISIBLE);
+        TextView p2Shape = (TextView) findViewById(R.id.p2_shape);
+        p2Shape.setVisibility(View.VISIBLE);
+        if (playerTurn == 0)
+            p1Shape.setText(p1Shape.getText() + " " + shapeMap.get(moveShape));
+        else if (playerTurn == 1)
+            p2Shape.setText(p2Shape.getText() + " " + shapeMap.get(moveShape));
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

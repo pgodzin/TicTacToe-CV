@@ -17,7 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Draw one of the following shapes to start:"
+        android:text="@string/draw_following_shape"
         android:id="@+id/select_text"
         android:layout_gravity="left|top"
         android:layout_margin="8dp"
@@ -26,11 +26,35 @@
     <ImageView
         android:layout_width="360dp"
         android:layout_height="50dp"
-        android:id="@+id/imageView"
-        android:layout_gravity="left|top"
+        android:id="@+id/shape_list"
+        android:layout_gravity="center_horizontal|top"
         android:layout_marginTop="36dp"
+        android:background="@drawable/shapes"
+        android:contentDescription="@string/poss_move_shapes" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/p1_shape"
+        android:layout_gravity="left|top"
+        android:layout_margin="8dp"
+        android:visibility="gone"
+        android:text="@string/p1_shape"
+        android:textSize="24sp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/p2_shape"
+        android:layout_gravity="left|top"
+        android:visibility="gone"
+        android:layout_marginTop="40dp"
+        android:text="@string/p2_shape"
         android:layout_marginLeft="8dp"
-        android:layout_marginRight="4dp"
-        android:background="@drawable/shapes" />
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:textSize="24sp" />
 
 </FrameLayout>

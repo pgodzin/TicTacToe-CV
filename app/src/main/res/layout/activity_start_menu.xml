@@ -1,0 +1,36 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.pgodzin.tictactoe.StartMenuActivity"
+    android:orientation="horizontal">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/banner"
+        android:background="@drawable/banner"
+        android:contentDescription="@string/banner" />
+
+    <Button
+        android:layout_width="120dp"
+        android:layout_height="90dp"
+        android:id="@+id/vs_computer"
+        android:layout_marginTop="135dp"
+        android:layout_marginLeft="135dp"
+        android:alpha="0"
+        android:clickable="true"
+        android:shadowColor="@android:color/transparent"
+        android:singleLine="true" />
+
+    <Button
+        android:layout_width="120dp"
+        android:layout_height="100dp"
+        android:id="@+id/multiplayer"
+        android:layout_marginTop="260dp"
+        android:layout_marginLeft="135dp"
+        android:alpha="0"
+        android:clickable="true"
+        android:shadowColor="@android:color/transparent"
+        android:singleLine="true" />
+</RelativeLayout>

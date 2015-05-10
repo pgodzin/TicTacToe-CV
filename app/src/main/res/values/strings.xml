@@ -4,4 +4,14 @@
     <string name="restart">Restart</string>
     <string name="tictactoe">Tic Tac Toe</string>
     <string name="title_activity_saved">SavedActivity</string>
+    <string name="title_activity_start_menu">StartMenuActivity</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="draw_following_shape">Draw one of the following shapes to start:</string>
+    <string name="poss_move_shapes">Possible Move Shapes</string>
+    <string name="banner">banner</string>
+    <string name="new_game">New Game</string>
+    <string name="p1_shape">Player 1 Shape:</string>
+    <string name="p2_shape">Player 2 Shape:</string>
 </resources>

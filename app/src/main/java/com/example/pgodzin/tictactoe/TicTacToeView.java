@@ -12,8 +12,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.Utils;
@@ -49,10 +52,13 @@ public class TicTacToeView extends View {
     Context mContext;
     Bitmap board, oldboard;
     Canvas mCanvas;
-    int player1Shape, player2Shape;
+    int[] playerShape = new int[]{-1, -1};
     int playerTurn = 0;
     int[] playerColors = new int[]{Color.BLUE, Color.RED};
     private Map<Path, Integer> colorsMap = new HashMap<>();
+    private Map<Integer, String> shapeMap;
+
+    int mode;
 
     static {
         System.loadLibrary("opencv_java");
@@ -77,6 +83,21 @@ public class TicTacToeView extends View {
         mCanvas.drawLine(dp(10), dp(240), dp(350), dp(240), paint);
         oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
         paint.setColor(playerColors[0]);
+
+        shapeMap = new HashMap<>();
+        shapeMap.put(0, "+");
+        shapeMap.put(1, "X");
+        shapeMap.put(2, "Triangle");
+        shapeMap.put(3, "Circle");
+        shapeMap.put(4, "Square");
+        shapeMap.put(5, "Arrow");
+        shapeMap.put(6, "Heart");
+
+/*
+        LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        v = inflater.inflate(R.layout.activity_main, null, false);
+*/
+
     }
 
     private void setupPaint() {
@@ -91,10 +112,7 @@ public class TicTacToeView extends View {
 
         canvas.drawBitmap(board, 0, 0, paint);
 
-        int currPlayerTurn = 0;
-        if (playerTurn == 0) currPlayerTurn = 1;
-
-        paint.setColor(playerColors[currPlayerTurn]);
+        paint.setColor(playerColors[playerTurn]);
         canvas.drawPath(path, paint);
         mCanvas.drawPath(path, paint);
 
@@ -142,13 +160,13 @@ public class TicTacToeView extends View {
                             new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (playerTurn == 0) playerTurn = 1;
-                                    else if (playerTurn == 1) playerTurn = 0;
                                     paths.add(path);
                                     colorsMap.put(path, playerTurn);
                                     path = new Path();
 
                                     processMove();
+                                    if (playerTurn == 0) playerTurn = 1;
+                                    else if (playerTurn == 1) playerTurn = 0;
                                     saveBitmap(board, "board");
                                 }
                             }).start();
@@ -252,69 +270,40 @@ public class TicTacToeView extends View {
                 if (!contourPts.contains(p) && p.inside(boxes[boxNum])) contourPts.add(p);
         }
         allContours.fromList(contourPts);
-        if (recognizePlus(convexPoints, contourMap.clone(), allContours)) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(mContext, "+ Identified", Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(mContext, "+ Not Identified", Toast.LENGTH_SHORT).show();
-                }
-            });
-            if (recognizeX(convexPoints, contourMap.clone(), allContours)) {
+        if (playerShape[playerTurn] == -1) {
+            final int moveShape = recognizeShape(convexPoints, contourMap.clone(), allContours);
+            if (moveShape != -1) {
+                playerShape[playerTurn] = moveShape;
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(mContext, "X Identified", Toast.LENGTH_SHORT).show();
+                        ((MainActivity) mContext).updatePlayerShapes(playerTurn, shapeMap, moveShape);
                     }
                 });
-            } else {
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(mContext, "X Not Identified", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                if (recognizeTriangle(convexPoints, contourMap.clone(), allContours)) {
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(mContext, "Triangle Identified", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } else {
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(mContext, "Triangle Not Identified", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                    if (recognizeSquare(convexPoints, contourMap.clone(), allContours)) {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(mContext, "Square Identified", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } else {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(mContext, "Square Not Identified", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-
-                    }
-                }
             }
         }
 
         oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
+    }
+
+    public int recognizeShape(Point[] convexPoints, Mat m, MatOfPoint contours) {
+        if (recognizePlus(convexPoints, m, contours)) {
+            return 0;
+        } else if (recognizeX(convexPoints, m, contours)) {
+            return 1;
+        } else if (recognizeTriangle(convexPoints, m, contours)) {
+            return 2;
+        } else if (recognizeCircle(convexPoints, m, contours)) {
+            return 3;
+        } else if (recognizeSquare(convexPoints, m, contours)) {
+            return 4;
+        } else if (recognizeArrow(convexPoints, m, contours)) {
+            return 5;
+        } else if (recognizeHeart(convexPoints, m, contours)) {
+            return 6;
+        } else {
+            return -1;
+        }
     }
 
     public boolean recognizePlus(Point[] convexPoints, Mat m, MatOfPoint contours) {
@@ -352,8 +341,6 @@ public class TicTacToeView extends View {
         Utils.matToBitmap(m, bmp);
         saveBitmap(bmp, "bounding+");
 
-        boolean notInCorners = true;
-
         int count = 0;
         for (Point p : convexPoints) {
             if (p.inside(cogRect)) {
@@ -363,16 +350,11 @@ public class TicTacToeView extends View {
 
         for (Point p : convexPoints) {
             if (p.inside(ulRect) || p.inside(urRect) || p.inside(blRect) || p.inside(brRect)) {
-                notInCorners = false;
-                break;
+                return false;
             }
         }
 
-        if (count == 4 && notInCorners) {
-            return true;
-        } else {
-            return false;
-        }
+        return count == 4;
     }
 
     public boolean recognizeX(Point[] convexPoints, Mat m, MatOfPoint contours) {
@@ -410,8 +392,6 @@ public class TicTacToeView extends View {
         Utils.matToBitmap(m, bmp);
         saveBitmap(bmp, "boundingX");
 
-        boolean notInMidEdges = true;
-
         int count = 0;
         for (Point p : convexPoints) {
             if (p.inside(cogRect)) {
@@ -421,16 +401,11 @@ public class TicTacToeView extends View {
 
         for (Point p : convexPoints) {
             if (p.inside(lMid) || p.inside(rMid) || p.inside(tMid) || p.inside(bMid)) {
-                notInMidEdges = false;
-                break;
+                return false;
             }
         }
 
-        if (count == 4 && notInMidEdges) {
-            return true;
-        } else {
-            return false;
-        }
+        return count == 4;
     }
 
     public boolean recognizeTriangle(Point[] convexPoints, Mat m, MatOfPoint contours) {
@@ -472,19 +447,58 @@ public class TicTacToeView extends View {
         Utils.matToBitmap(m, bmp);
         saveBitmap(bmp, "boundingTri");
 
-        boolean notInUpperCorners = true, notInMiddle = true;
         boolean br = false, bl = false, mid = false;
 
         for (Point p : convexPoints) {
-            if (p.inside(ulRect) || p.inside(urRect)) notInUpperCorners = false;
-            if (p.inside(cogRect)) notInMiddle = false;
+            if (p.inside(ulRect) || p.inside(urRect)) return false;
+            if (p.inside(cogRect)) return false;
 
             if (p.inside(tMid)) mid = true;
             else if (p.inside(blRect)) bl = true;
             else if (p.inside(brRect)) br = true;
         }
 
-        return bl && br && mid && notInUpperCorners && notInMiddle;
+        return bl && br && mid;
+    }
+
+    public boolean recognizeCircle(Point[] convexPoints, Mat m, MatOfPoint contours) {
+
+        if (convexPoints.length < 15) return false;
+
+        Scalar blue = new Scalar(0, 0, 255, 255);
+        Scalar green = new Scalar(0, 255, 0, 255);
+
+        // Draw bounding rectangle around contour
+        Rect boundingRect = Imgproc.boundingRect(contours);
+        Core.rectangle(m, boundingRect.tl(), boundingRect.br(), blue);
+
+        int w = boundingRect.width;
+        int h = boundingRect.height;
+
+        double ratio = ((double) w) / h;
+        if (ratio > 1) ratio = ((double) h) / w;
+
+        boolean circular = ratio > .8;
+        if (!circular) return false;
+
+        Point cog = centerOfGravity(contours);
+        Core.circle(m, cog, 10, blue);
+
+        Rect cogRect = new Rect(new Point(cog.x - w / 4, cog.y - h / 4), new Point(cog.x + w / 4, cog.y + h / 4));
+        Core.rectangle(m, cogRect.tl(), cogRect.br(), green);
+
+        Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(m, bmp);
+        saveBitmap(bmp, "boundingCircle");
+
+        Point[] allPoints = contours.toArray();
+        for (Point p : allPoints) {
+            if (p.inside(cogRect)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public boolean recognizeSquare(Point[] convexPoints, Mat m, MatOfPoint contours) {
@@ -503,6 +517,7 @@ public class TicTacToeView extends View {
         if (ratio > 1) ratio = ((double) h) / w;
 
         boolean squarish = ratio > .8;
+        if (!squarish) return false;
 
         Point cog = centerOfGravity(contours);
         Core.circle(m, cog, 10, blue);
@@ -514,17 +529,115 @@ public class TicTacToeView extends View {
         Utils.matToBitmap(m, bmp);
         saveBitmap(bmp, "boundingSquare");
 
-        boolean allPointsAroundEdges = true;
+        Point[] allPoints = contours.toArray();
+        for (Point p : allPoints) {
+            if (p.inside(cogRect)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean recognizeArrow(Point[] convexPoints, Mat m, MatOfPoint contours) {
+
+        Scalar blue = new Scalar(0, 0, 255, 255);
+        Scalar green = new Scalar(0, 255, 0, 255);
+
+        // Draw bounding rectangle around contour
+        Rect boundingRect = Imgproc.boundingRect(contours);
+        Core.rectangle(m, boundingRect.tl(), boundingRect.br(), blue);
+
+        Point cog = centerOfGravity(contours);
+        if (cog.x < boundingRect.x + boundingRect.width / 2) return false;
+        Core.circle(m, cog, 10, blue);
+
+        int w = 3 * boundingRect.width / 8;
+        int h = boundingRect.height / 8;
+        Rect ulRect = new Rect(boundingRect.tl(), new Point(boundingRect.tl().x + w,
+                boundingRect.tl().y + h));
+        Rect blRect = new Rect(new Point(boundingRect.tl().x, boundingRect.br().y - h),
+                new Point(boundingRect.tl().x + w, boundingRect.br().y));
+        Rect midRight = new Rect(new Point(cog.x, cog.y - h * 2), new Point(boundingRect.br().x, cog.y + h * 2));
+
+        Core.rectangle(m, ulRect.tl(), ulRect.br(), green);
+        Core.rectangle(m, blRect.tl(), blRect.br(), green);
+        Core.rectangle(m, midRight.tl(), midRight.br(), green);
+
+        Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(m, bmp);
+        saveBitmap(bmp, "boundingArrow");
+
+        Point[] allPoints = contours.toArray();
+        for (Point p : allPoints) {
+            if (p.inside(ulRect) || p.inside(blRect)) {
+                return false;
+            }
+        }
+
+        int count = 0;
+        for (Point p : convexPoints) {
+            if (p.inside(midRight)) {
+                count++;
+            }
+        }
+
+        return count >= 3;
+    }
+
+    public boolean recognizeHeart(Point[] convexPoints, Mat m, MatOfPoint contours) {
+
+        Scalar blue = new Scalar(0, 0, 255, 255);
+        Scalar green = new Scalar(0, 255, 0, 255);
+
+        // Draw bounding rectangle around contour
+        Rect boundingRect = Imgproc.boundingRect(contours);
+        Core.rectangle(m, boundingRect.tl(), boundingRect.br(), blue);
+
+        int w = boundingRect.width / 4;
+        int h = boundingRect.height / 4;
+        Rect ulRect = new Rect(boundingRect.tl(), new Point(boundingRect.tl().x + w,
+                boundingRect.tl().y + h));
+        Rect urRect = new Rect(new Point(boundingRect.br().x - w, boundingRect.tl().y),
+                new Point(boundingRect.br().x, boundingRect.tl().y + h));
+
+        Rect bottomMid = new Rect(new Point(boundingRect.tl().x + w * 2 - w, boundingRect.br().y - h / 4),
+                new Point(boundingRect.tl().x + w * 2 + w, boundingRect.br().y));
+        Rect upperMid = new Rect(new Point(boundingRect.tl().x + w * 2 - w, boundingRect.tl().y + h / 4),
+                new Point(boundingRect.tl().x + w * 2 + w, boundingRect.tl().y + 3 * h / 2));
+
+        Core.rectangle(m, ulRect.tl(), ulRect.br(), green);
+        Core.rectangle(m, urRect.tl(), urRect.br(), green);
+        Core.rectangle(m, bottomMid.tl(), bottomMid.br(), green);
+        Core.rectangle(m, upperMid.tl(), upperMid.br(), green);
+
+        Point cog = centerOfGravity(contours);
+        Core.circle(m, cog, 10, blue);
+        Rect cogRect = new Rect(new Point(cog.x - w / 2, cog.y), new Point(cog.x + w / 2, cog.y + h));
+        Core.rectangle(m, cogRect.tl(), cogRect.br(), green);
 
         Point[] allPoints = contours.toArray();
         for (Point p : allPoints) {
             if (p.inside(cogRect)) {
-                allPointsAroundEdges = false;
-                break;
+                return false;
             }
         }
 
-        return squarish && allPointsAroundEdges;
+        Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(m, bmp);
+        saveBitmap(bmp, "boundingHeart");
+
+        boolean ur = false, ul = false, bMid = false, uMid = false;
+
+        for (Point p : convexPoints) {
+
+            if (p.inside(bottomMid)) bMid = true;
+            else if (p.inside(upperMid)) uMid = true;
+            else if (p.inside(ulRect)) ul = true;
+            else if (p.inside(urRect)) ur = true;
+        }
+
+        return ul && ur && bMid && uMid;
     }
 
     /**
@@ -560,7 +673,8 @@ public class TicTacToeView extends View {
         return biggestContourIndex;
     }
 
-    public static Point[] convexityDefects(Mat mat, List<MatOfPoint> contours, int biggestContourIndex) {
+    public static Point[] convexityDefects(Mat mat, List<MatOfPoint> contours,
+                                           int biggestContourIndex) {
         if (contours.size() > 0 && biggestContourIndex > -1) {
             List<MatOfInt> convexHull = new ArrayList<>();
             convexHull.add(new MatOfInt());

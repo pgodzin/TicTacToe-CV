@@ -26,7 +26,6 @@ public class StartMenuActivity extends ActionBarActivity {
             @Override
             public void onClick(View view) {
                 i.putExtra("mode", 0);
-                Toast.makeText(getApplicationContext(), "0", Toast.LENGTH_SHORT).show();
                 startActivity(i);
             }
         });
@@ -35,7 +34,6 @@ public class StartMenuActivity extends ActionBarActivity {
             @Override
             public void onClick(View view) {
                 i.putExtra("mode", 1);
-                Toast.makeText(getApplicationContext(), "1", Toast.LENGTH_SHORT).show();
                 startActivity(i);
             }
         });

@@ -2,10 +2,10 @@
     <string name="app_name">Tic Tac Toe</string>
 
     <string name="restart">Restart</string>
+    <string name="play_again">Play Again!</string>
+    <string name="game_over">Game Over!</string>
     <string name="tictactoe">Tic Tac Toe</string>
     <string name="title_activity_saved">SavedActivity</string>
-    <string name="title_activity_start_menu">StartMenuActivity</string>
-
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="draw_following_shape">Draw one of the following shapes to start:</string>
@@ -14,4 +14,11 @@
     <string name="new_game">New Game</string>
     <string name="p1_shape">Player 1 Shape:</string>
     <string name="p2_shape">Player 2 Shape:</string>
+    <string name="tie_game">Tie Game!</string>
+    <string name="tie_game_content">Nobody won this round. Play again to best your opponent!</string>
+    <string name="p1_won_content">Congratulations Player 1! Try again to see if you can keep winning!</string>
+    <string name="p2_won_content">Congratulations Player 2! Try again to see if you can keep winning!</string>
+    <string name="AI_won_content">You lost to the AI! Play again to try to beat it!</string>
+    <string name="p1_won">Player One Wins!</string>
+    <string name="p2_won">Player Two Wins!</string>
 </resources>

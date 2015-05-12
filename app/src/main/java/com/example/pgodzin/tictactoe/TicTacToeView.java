@@ -1,6 +1,7 @@
 package com.example.pgodzin.tictactoe;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -12,12 +13,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
@@ -45,16 +45,22 @@ import java.util.Map;
  */
 public class TicTacToeView extends View {
 
+    Board b = new Board();
+
     Paint paint = new Paint();
     Path path = new Path();
     ArrayList<Path> paths = new ArrayList<>();
+    ArrayList<Path> undonePaths = new ArrayList<Path>();
+
     long lastDrawn = 0;
     Context mContext;
     Bitmap board, oldboard;
     Canvas mCanvas;
+
     int[] playerShape = new int[]{-1, -1};
     int playerTurn = 0;
     int[] playerColors = new int[]{Color.BLUE, Color.RED};
+
     private Map<Path, Integer> colorsMap = new HashMap<>();
     private Map<Integer, String> shapeMap;
 
@@ -68,12 +74,6 @@ public class TicTacToeView extends View {
         super(context, attrs);
         mContext = context;
         board = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                saveBitmap(board, "board");
-            }
-        }).start();
         mCanvas = new Canvas(board);
         mCanvas.drawColor(0xFFFFFFFF);
         setupPaint();
@@ -87,17 +87,11 @@ public class TicTacToeView extends View {
         shapeMap = new HashMap<>();
         shapeMap.put(0, "+");
         shapeMap.put(1, "X");
-        shapeMap.put(2, "Triangle");
-        shapeMap.put(3, "Circle");
-        shapeMap.put(4, "Square");
+        shapeMap.put(2, "Circle");
+        shapeMap.put(3, "Square");
+        shapeMap.put(4, "Triangle");
         shapeMap.put(5, "Arrow");
         shapeMap.put(6, "Heart");
-
-/*
-        LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        v = inflater.inflate(R.layout.activity_main, null, false);
-*/
-
     }
 
     private void setupPaint() {
@@ -130,6 +124,9 @@ public class TicTacToeView extends View {
         return px;
     }
 
+    private float mX, mY;
+    private static final float TOUCH_TOLERANCE = 4;
+
     public boolean onTouchEvent(MotionEvent event) {
         // Get the coordinates of the touch event.
         float eventX = event.getX();
@@ -138,13 +135,23 @@ public class TicTacToeView extends View {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 // Set a new starting point
+                undonePaths.clear();
+                path.reset();
                 path.moveTo(eventX, eventY);
                 lastDrawn = System.currentTimeMillis();
-                return true;
+                mX = eventX;
+                mY = eventY;
+                invalidate();
+                break;
             case MotionEvent.ACTION_MOVE:
                 // Connect the points
-                path.lineTo(eventX, eventY);
-                lastDrawn = System.currentTimeMillis();
+                float dx = Math.abs(eventX - mX);
+                float dy = Math.abs(eventY - mY);
+                if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
+                    path.lineTo(eventX, eventY);
+                    lastDrawn = System.currentTimeMillis();
+                }
+                invalidate();
                 break;
             case MotionEvent.ACTION_UP:
                 new CountDownTimer(1500, 500) {
@@ -156,47 +163,56 @@ public class TicTacToeView extends View {
                     @Override
                     public void onFinish() {
                         if (System.currentTimeMillis() > lastDrawn + 1500) {
-                            Toast.makeText(mContext, "Saving", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(mContext, "Processing...", Toast.LENGTH_LONG).show();
                             new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    paths.add(path);
                                     colorsMap.put(path, playerTurn);
-                                    path = new Path();
+                                    paint.setColor(playerColors[colorsMap.get(path)]);
+                                    paths.add(path);
+                                    for (Path p : paths) mCanvas.drawPath(p, paint);
 
+                                    path = new Path();
+                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            invalidate();
+                                        }
+                                    });
+                                    saveBitmap(board, "board");
                                     processMove();
                                     if (playerTurn == 0) playerTurn = 1;
                                     else if (playerTurn == 1) playerTurn = 0;
-                                    saveBitmap(board, "board");
+
                                 }
                             }).start();
                         }
                     }
                 }.start();
-
                 break;
             default:
                 return false;
         }
-
-        // Makes our view repaint and call onDraw
-        invalidate();
         return true;
     }
 
     public void processMove() {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                invalidate();
+            }
+        });
+
         Mat oldBoard = new Mat();
         Bitmap oldBmp = oldboard.copy(Bitmap.Config.ARGB_8888, true);
         Utils.bitmapToMat(oldBmp, oldBoard);
         Utils.matToBitmap(oldBoard, oldBmp);
 
-        saveBitmap(oldBmp, "old");
-
         Mat newBoard = new Mat();
         Bitmap bmp = board.copy(Bitmap.Config.ARGB_8888, true);
         Utils.bitmapToMat(bmp, newBoard);
         Utils.matToBitmap(newBoard, bmp);
-        saveBitmap(bmp, "new");
 
         final Mat move = new Mat(newBoard.size(), CvType.CV_8UC3);
         Core.absdiff(oldBoard, newBoard, move);
@@ -235,7 +251,7 @@ public class TicTacToeView extends View {
                 Imgproc.drawContours(contourMap, contours, i, white);
         }
 
-        Rect[] boxes = new Rect[]{
+        Rect[] cells = new Rect[]{
                 new Rect(new Point(0, 0), new Point(move.cols() / 3, move.cols() / 3)),
                 new Rect(new Point(0, move.cols() / 3), new Point(move.cols() / 3, 2 * move.cols() / 3)),
                 new Rect(new Point(0, 2 * move.cols() / 3), new Point(move.cols() / 3, move.cols())),
@@ -251,12 +267,54 @@ public class TicTacToeView extends View {
         for (Point p : convexPoints) {
             Core.circle(contourMap, p, 10, new Scalar(255, 255, 255));
         }
-        int boxNum = -1;
-        for (int i = 0; i < boxes.length; i++) {
-            if (convexPoints.length > 0 && convexPoints[0].inside(boxes[i])) {
-                boxNum = i;
+        int cellNum = -1;
+        for (int i = 0; i < cells.length; i++) {
+            if (convexPoints.length > 0 && convexPoints[0].inside(cells[i])) {
+                cellNum = i;
                 break;
             }
+        }
+
+        for (Point p : convexPoints) {
+            for (int i = 0; i < cells.length; i++) {
+                if (p.inside(cells[i]) && i != cellNum && cellNum != -1) {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(mContext, "Draw your shapes within a single cell. " +
+                                            "Restarting game...",
+                                    Toast.LENGTH_LONG).show();
+                            ((MainActivity) mContext).restart();
+                        }
+                    });
+                    return;
+                }
+            }
+        }
+
+        if (cellNum == -1) {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    //path = new Path();
+                    //paths.clear();
+                    /*if (paths.size() > 0) {
+                        undonePaths.add(paths.remove(paths.size() - 1));
+                        invalidate();
+                    }
+                    board = oldboard.copy(Bitmap.Config.ARGB_8888, true);
+
+                    if (playerTurn == 0) playerTurn = 1;
+                    else if (playerTurn == 1) playerTurn = 0;*/
+
+                    ((MainActivity) mContext).restart();
+                    Toast.makeText(mContext, "This shape was not identified, game restarting",
+                            Toast.LENGTH_LONG).show();
+
+
+                }
+            });
+            return;
         }
 
         Utils.matToBitmap(contourMap, contourBmp);
@@ -267,9 +325,10 @@ public class TicTacToeView extends View {
         for (MatOfPoint c : contours) {
             List<Point> pList = c.toList();
             for (Point p : pList)
-                if (!contourPts.contains(p) && p.inside(boxes[boxNum])) contourPts.add(p);
+                if (!contourPts.contains(p) && p.inside(cells[cellNum])) contourPts.add(p);
         }
         allContours.fromList(contourPts);
+
         if (playerShape[playerTurn] == -1) {
             final int moveShape = recognizeShape(convexPoints, contourMap.clone(), allContours);
             if (moveShape != -1) {
@@ -280,26 +339,303 @@ public class TicTacToeView extends View {
                         ((MainActivity) mContext).updatePlayerShapes(playerTurn, shapeMap, moveShape);
                     }
                 });
+                oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
+                boolean validBoardPos = addMoveToBoard(cellNum);
+                if (!validBoardPos) return;
+                if (checkForEndGame()) return;
+
+                if (mode == 0) {
+                    if (playerShape[0] == 3) playerShape[1] = 1;
+                    else playerShape[1] = 3;
+                    paint.setColor(playerColors[1]);
+                    AIPlayer ai = new AIPlayer(b, Cell.Content.P2_SHAPE,
+                            Cell.Content.P1_SHAPE, playerShape[1], mCanvas, paint, mContext);
+                    ai.move();
+                    playerTurn = 1;
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            ((MainActivity) mContext).updatePlayerShapes(1, shapeMap, playerShape[1]);
+                            invalidate();
+                        }
+                    });
+                    if (checkForEndGame()) return;
+                    oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
+                }
+            } else {
+
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        /*if (playerTurn == 0) playerTurn = 1;
+                        else if (playerTurn == 1) playerTurn = 0;
+
+                        //path = new Path();
+                        //paths.clear();
+                        if (paths.size() > 0) {
+                            undonePaths.add(paths.remove(paths.size() - 1));
+                            invalidate();
+                        }
+                        board = oldboard.copy(Bitmap.Config.ARGB_8888, true);*/
+
+                        ((MainActivity) mContext).restart();
+                        Toast.makeText(mContext, "This shape was not identified. Restarting game...",
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
+            }
+        } else {
+            boolean sameShape = checkSameShape(playerShape[playerTurn], convexPoints, contourMap.clone(), allContours);
+            if (sameShape) {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(mContext, shapeMap.get(playerShape[playerTurn]) + " recognized",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+                oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
+                boolean validBoardPos = addMoveToBoard(cellNum);
+                if (!validBoardPos) return;
+                if (checkForEndGame()) return;
+
+                if (mode == 0) {
+                    if (playerShape[0] == 3) playerShape[1] = 1;
+                    else playerShape[1] = 3;
+                    paint.setColor(playerColors[1]);
+                    AIPlayer ai = new AIPlayer(b, Cell.Content.P2_SHAPE,
+                            Cell.Content.P1_SHAPE, playerShape[1], mCanvas, paint, mContext);
+                    ai.move();
+                    playerTurn = 1;
+                    oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            invalidate();
+                        }
+                    });
+                    if (checkForEndGame()) return;
+                }
+            } else {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        /*if (playerTurn == 0) playerTurn = 1;
+                        else if (playerTurn == 1) playerTurn = 0;
+
+                        //path = new Path();
+                        //paths.clear();
+                        if (paths.size() > 0) {
+                            undonePaths.add(paths.remove(paths.size() - 1));
+                            invalidate();
+                        }
+                        board = oldboard.copy(Bitmap.Config.ARGB_8888, true);*/
+                        int tempTurn = playerTurn;
+                        //if (playerTurn == 0) tempTurn = 1;
+                        //else if (playerTurn == 1) tempTurn = 0;
+                        if (mode == 0) tempTurn = 0;
+
+                        Toast.makeText(mContext, "Move not recognized as a " +
+                                        shapeMap.get(playerShape[tempTurn]) + ". Restarting game...",
+                                Toast.LENGTH_LONG).show();
+                        ((MainActivity) mContext).restart();
+                    }
+                });
+                return;
             }
         }
+    }
 
-        oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
+    public boolean checkForEndGame() {
+        Cell.Content content = Cell.Content.P1_SHAPE;
+        if (playerTurn == 1) content = Cell.Content.P2_SHAPE;
+
+        if (b.isDraw()) {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    new MaterialDialog.Builder(mContext)
+                            .title(R.string.tie_game)
+                            .content(R.string.tie_game_content)
+                            .positiveText(R.string.play_again)
+                            .callback(new MaterialDialog.ButtonCallback() {
+                                @Override
+                                public void onPositive(MaterialDialog dialog) {
+                                    ((MainActivity) mContext).restart();
+                                    dialog.dismiss();
+                                }
+                            })
+                            .cancelListener(new DialogInterface.OnCancelListener() {
+                                @Override
+                                public void onCancel(DialogInterface dialog) {
+                                    ((MainActivity) mContext).restart();
+                                    dialog.dismiss();
+                                }
+                            })
+                            .dismissListener(new DialogInterface.OnDismissListener() {
+                                @Override
+                                public void onDismiss(DialogInterface dialog) {
+                                    ((MainActivity) mContext).restart();
+                                    dialog.dismiss();
+                                }
+                            }).show();
+                }
+            });
+            return true;
+        } else if (b.hasWon(content)) {
+            final Cell.Content finalContent = content;
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    int content_string;
+                    if (finalContent == Cell.Content.P2_SHAPE && mode == 0)
+                        content_string = R.string.AI_won_content;
+                    else if (finalContent == Cell.Content.P2_SHAPE && mode == 1)
+                        content_string = R.string.p2_won_content;
+                    else content_string = R.string.p1_won_content;
+
+                    new MaterialDialog.Builder(mContext)
+                            .title(R.string.game_over)
+                            .content(content_string)
+                            .positiveText(R.string.play_again)
+                            .callback(new MaterialDialog.ButtonCallback() {
+                                @Override
+                                public void onPositive(MaterialDialog dialog) {
+                                    ((MainActivity) mContext).restart();
+                                }
+                            })
+                            .cancelListener(new DialogInterface.OnCancelListener() {
+                                @Override
+                                public void onCancel(DialogInterface dialog) {
+                                    ((MainActivity) mContext).restart();
+                                }
+                            })
+                            .dismissListener(new DialogInterface.OnDismissListener() {
+                                @Override
+                                public void onDismiss(DialogInterface dialog) {
+                                    ((MainActivity) mContext).restart();
+                                }
+                            }).show();
+                }
+            });
+            return true;
+        }
+        return false;
+    }
+
+    public boolean addMoveToBoard(int cellNum) {
+        Cell.Content content = Cell.Content.P1_SHAPE;
+        if (playerTurn == 1) content = Cell.Content.P2_SHAPE;
+
+        switch (cellNum) {
+            case 0:
+                if (b.cells[0][0].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[0][0].content = content;
+                b.currentRow = 0;
+                b.currentCol = 0;
+                break;
+            case 1:
+                if (b.cells[1][0].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[1][0].content = content;
+                b.currentRow = 1;
+                b.currentCol = 0;
+                break;
+            case 2:
+                if (b.cells[2][0].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[2][0].content = content;
+                b.currentRow = 2;
+                b.currentCol = 0;
+                break;
+            case 3:
+                if (b.cells[0][1].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[0][1].content = content;
+                b.currentRow = 0;
+                b.currentCol = 1;
+                break;
+            case 4:
+                if (b.cells[1][1].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[1][1].content = content;
+                b.currentRow = 1;
+                b.currentCol = 1;
+                break;
+            case 5:
+                if (b.cells[2][1].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[2][1].content = content;
+                b.currentRow = 2;
+                b.currentCol = 1;
+                break;
+            case 6:
+                if (b.cells[0][2].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[0][2].content = content;
+                b.currentRow = 0;
+                b.currentCol = 2;
+                break;
+            case 7:
+                if (b.cells[1][2].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[1][2].content = content;
+                b.currentRow = 1;
+                b.currentCol = 2;
+                break;
+            case 8:
+                if (b.cells[2][2].content != Cell.Content.EMPTY) return errorCellAlreadyFilled();
+                b.cells[2][2].content = content;
+                b.currentRow = 2;
+                b.currentCol = 2;
+                break;
+            default:
+                break;
+        }
+        return true;
+    }
+
+    public boolean errorCellAlreadyFilled() {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(mContext, "Cell was already filled! Game restarting...",
+                        Toast.LENGTH_LONG).show();
+                ((MainActivity) mContext).restart();
+            }
+        });
+        return false;
+    }
+
+    public boolean checkSameShape(int shape, Point[] convexPoints, Mat m, MatOfPoint contours) {
+        switch (shape) {
+            case 0:
+                return recognizePlus(convexPoints, m.clone(), contours);
+            case 1:
+                return recognizeX(convexPoints, m.clone(), contours);
+            case 2:
+                return recognizeCircle(convexPoints, m.clone(), contours);
+            case 3:
+                return recognizeSquare(convexPoints, m.clone(), contours);
+            case 4:
+                return recognizeTriangle(convexPoints, m.clone(), contours);
+            case 5:
+                return recognizeArrow(convexPoints, m.clone(), contours);
+            case 6:
+                return recognizeHeart(convexPoints, m.clone(), contours);
+            default:
+                return false;
+        }
     }
 
     public int recognizeShape(Point[] convexPoints, Mat m, MatOfPoint contours) {
-        if (recognizePlus(convexPoints, m, contours)) {
+        if (recognizePlus(convexPoints, m.clone(), contours)) {
             return 0;
-        } else if (recognizeX(convexPoints, m, contours)) {
+        } else if (recognizeX(convexPoints, m.clone(), contours)) {
             return 1;
-        } else if (recognizeTriangle(convexPoints, m, contours)) {
+        } else if (recognizeCircle(convexPoints, m.clone(), contours)) {
             return 2;
-        } else if (recognizeCircle(convexPoints, m, contours)) {
+        } else if (recognizeSquare(convexPoints, m.clone(), contours)) {
             return 3;
-        } else if (recognizeSquare(convexPoints, m, contours)) {
+        } else if (recognizeTriangle(convexPoints, m.clone(), contours)) {
             return 4;
-        } else if (recognizeArrow(convexPoints, m, contours)) {
+        } else if (recognizeArrow(convexPoints, m.clone(), contours)) {
             return 5;
-        } else if (recognizeHeart(convexPoints, m, contours)) {
+        } else if (recognizeHeart(convexPoints, m.clone(), contours)) {
             return 6;
         } else {
             return -1;
@@ -334,7 +670,7 @@ public class TicTacToeView extends View {
         Point cog = centerOfGravity(contours);
         Core.circle(m, cog, 10, blue);
 
-        Rect cogRect = new Rect(new Point(cog.x - w, cog.y - h), new Point(cog.x + w / 2, cog.y + h / 2));
+        Rect cogRect = new Rect(new Point(cog.x - w, cog.y - h), new Point(cog.x + w, cog.y + h));
         Core.rectangle(m, cogRect.tl(), cogRect.br(), green);
 
         Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
@@ -601,10 +937,10 @@ public class TicTacToeView extends View {
         Rect urRect = new Rect(new Point(boundingRect.br().x - w, boundingRect.tl().y),
                 new Point(boundingRect.br().x, boundingRect.tl().y + h));
 
-        Rect bottomMid = new Rect(new Point(boundingRect.tl().x + w * 2 - w, boundingRect.br().y - h / 4),
+        Rect bottomMid = new Rect(new Point(boundingRect.tl().x + w * 2 - w, boundingRect.br().y - h / 3),
                 new Point(boundingRect.tl().x + w * 2 + w, boundingRect.br().y));
         Rect upperMid = new Rect(new Point(boundingRect.tl().x + w * 2 - w, boundingRect.tl().y + h / 4),
-                new Point(boundingRect.tl().x + w * 2 + w, boundingRect.tl().y + 3 * h / 2));
+                new Point(boundingRect.tl().x + w * 2 + w, boundingRect.tl().y + h * 1.8));
 
         Core.rectangle(m, ulRect.tl(), ulRect.br(), green);
         Core.rectangle(m, urRect.tl(), urRect.br(), green);
@@ -686,8 +1022,8 @@ public class TicTacToeView extends View {
             //Rect boundingRect = Imgproc.boundingRect(contours.get(biggestContourIndex));
 
             // Loop over all contours
-            List<Point[]> convexPoints = new ArrayList<Point[]>();
-            List<Point> points = new ArrayList<Point>();
+            List<Point[]> convexPoints = new ArrayList<>();
+            List<Point> points = new ArrayList<>();
             // Loop over all points that need to be hulled in current contour
 
             for (int j = 0; j < defects.toList().size() / 4; j++) {

@@ -12,6 +12,7 @@ import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,9 +33,19 @@ public class MainActivity extends ActionBarActivity {
         mode = i.getIntExtra("mode", -1);
         TicTacToeView tttView = (TicTacToeView) findViewById(R.id.ttt);
         tttView.mode = mode;
+
+        Button b = (Button) findViewById(R.id.newgame);
+        if (b != null) {
+            b.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    restart();
+                }
+            });
+        }
     }
 
-    public void updatePlayerShapes(int playerTurn, Map<Integer, String> shapeMap, int moveShape){
+    public void updatePlayerShapes(int playerTurn, Map<Integer, String> shapeMap, int moveShape) {
         ImageView shapes = (ImageView) findViewById(R.id.shape_list);
         shapes.setVisibility(View.GONE);
         TextView selectText = (TextView) findViewById(R.id.select_text);
@@ -61,25 +72,47 @@ public class MainActivity extends ActionBarActivity {
         int id = item.getItemId();
 
         if (id == R.id.restart) {
-            Toast.makeText(getApplicationContext(), "Restart", Toast.LENGTH_SHORT).show();
-            TicTacToeView tttView = (TicTacToeView) findViewById(R.id.ttt);
-            tttView.board = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
-            tttView.mCanvas.setBitmap(tttView.board);
-            tttView.mCanvas.drawColor(0xFFFFFFFF);
-            tttView.paint.setColor(Color.BLACK);
-            tttView.mCanvas.drawLine(dp(120), dp(10), dp(120), dp(350), tttView.paint);
-            tttView.mCanvas.drawLine(dp(240), dp(10), dp(240), dp(350), tttView.paint);
-            tttView.mCanvas.drawLine(dp(10), dp(120), dp(350), dp(120), tttView.paint);
-            tttView.mCanvas.drawLine(dp(10), dp(240), dp(350), dp(240), tttView.paint);
-            tttView.path.reset();
-            for (Path p : tttView.paths) {
-                p.reset();
-            }
-            tttView.draw(tttView.mCanvas);
+            restart();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void restart() {
+        TicTacToeView tttView = (TicTacToeView) findViewById(R.id.ttt);
+        tttView.board = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        tttView.mCanvas.setBitmap(tttView.board);
+        tttView.mCanvas.drawColor(0xFFFFFFFF);
+        tttView.paint.setColor(Color.BLACK);
+        tttView.mCanvas.drawLine(dp(120), dp(10), dp(120), dp(350), tttView.paint);
+        tttView.mCanvas.drawLine(dp(240), dp(10), dp(240), dp(350), tttView.paint);
+        tttView.mCanvas.drawLine(dp(10), dp(120), dp(350), dp(120), tttView.paint);
+        tttView.mCanvas.drawLine(dp(10), dp(240), dp(350), dp(240), tttView.paint);
+        tttView.oldboard = tttView.board.copy(Bitmap.Config.ARGB_8888, true);
+
+        tttView.path.reset();
+        tttView.paths.clear();
+        tttView.undonePaths.clear();
+
+        ImageView shapes = (ImageView) findViewById(R.id.shape_list);
+        shapes.setVisibility(View.VISIBLE);
+        TextView selectText = (TextView) findViewById(R.id.select_text);
+        selectText.setVisibility(View.VISIBLE);
+        TextView p1Shape = (TextView) findViewById(R.id.p1_shape);
+        p1Shape.setVisibility(View.GONE);
+        TextView p2Shape = (TextView) findViewById(R.id.p2_shape);
+        p2Shape.setVisibility(View.GONE);
+        p1Shape.setText(R.string.p1_shape);
+        p2Shape.setText(R.string.p2_shape);
+
+        tttView.playerShape = new int[]{-1, -1};
+        tttView.playerTurn = 0;
+
+        tttView.b.init();
+
+        tttView.draw(tttView.mCanvas);
+        tttView.invalidate();
     }
 
     // Convert dp to pixels

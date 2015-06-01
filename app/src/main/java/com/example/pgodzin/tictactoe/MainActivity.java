@@ -108,6 +108,7 @@ public class MainActivity extends ActionBarActivity {
 
         tttView.playerShape = new int[]{-1, -1};
         tttView.playerTurn = 0;
+        tttView.canDraw = true;
 
         tttView.b.init();
 

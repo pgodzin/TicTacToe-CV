@@ -24,12 +24,13 @@ public class AIPlayer {
     int playerShape;
     Paint paint;
     Context mContext;
+    boolean firstMove;
 
     /**
      * Constructor with the given game board
      */
     public AIPlayer(Board board, Cell.Content myShape, Cell.Content oppShape, int playerShape,
-                    Canvas mCanvas, Paint paint, Context context) {
+                    Canvas mCanvas, Paint paint, Context context, boolean firstMove) {
         cells = board.cells;
         b = board;
         this.myShape = myShape;
@@ -38,15 +39,18 @@ public class AIPlayer {
         this.playerShape = playerShape;
         this.paint = paint;
         mContext = context;
+        this.firstMove = firstMove;
     }
 
     /**
      * Get next best move for computer. Return int[2] of {row, col}
      */
     void move() {
-        int[] result = minimax(2, myShape, -Integer.MAX_VALUE, Integer.MAX_VALUE); // depth, max turn
+        int depth = 2;
+        if (firstMove) depth = 4;
+        int[] result = minimax(depth, myShape, -Integer.MAX_VALUE, Integer.MAX_VALUE); // depth, max turn
         b.cells[result[1]][result[2]].content = myShape;
-        if (playerShape == 3) {
+        if (playerShape == 2) {
             mCanvas.drawCircle(dp(60 + 120 * result[2]), dp(60 + 120 * result[1]), dp(40), paint);
         } else if (playerShape == 1) {
             mCanvas.drawLine(dp(20 + 120 * result[2]), dp(20 + 120 * result[1]),

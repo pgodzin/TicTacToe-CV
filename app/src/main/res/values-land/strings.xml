@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Tic Tac Toe</string>
+
+    <string name="restart">Restart</string>
+    <string name="tictactoe">Tic Tac Toe</string>
+    <string name="title_activity_saved">SavedActivity</string>
+    <string name="draw_following_shape">Draw one of the following shapes to start:</string>
+    <string name="poss_move_shapes">Possible Move Shapes</string>
+    <string name="banner">banner</string>
+    <string name="p1_shape">Player 1 Shape:</string>
+</resources>

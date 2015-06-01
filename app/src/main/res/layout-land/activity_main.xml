@@ -1,0 +1,69 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffff">
+
+    <TextView
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/draw_following_shape"
+        android:id="@+id/select_text"
+        android:layout_gravity="left|top"
+        android:layout_margin="8dp"
+        android:textColor="#ff000000" />
+
+    <ImageView
+        android:layout_width="160dp"
+        android:layout_height="100dp"
+        android:id="@+id/shape_list"
+        android:layout_gravity="left|top"
+        android:layout_marginTop="80dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="8dp"
+        android:background="@drawable/shapes_landscape"
+        android:contentDescription="@string/poss_move_shapes"/>
+
+    <view
+        android:layout_width="360dp"
+        android:layout_height="360dp"
+        class="com.example.pgodzin.tictactoe.TicTacToeView"
+        android:id="@+id/ttt"
+        android:layout_gravity="right|top"
+        android:layout_marginBottom="4dp" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/new_game"
+        android:id="@+id/newgame"
+        android:layout_gravity="left|bottom"
+        android:layout_margin="40dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/p1_shape"
+        android:layout_gravity="left|top"
+        android:layout_margin="8dp"
+        android:visibility="gone"
+        android:text="@string/p1_shape"
+        android:textSize="24sp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/p2_shape"
+        android:layout_gravity="left|top"
+        android:visibility="gone"
+        android:layout_marginTop="40dp"
+        android:text="@string/p2_shape"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:textSize="24sp" />
+
+</FrameLayout>

@@ -11,6 +11,7 @@ import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
@@ -122,14 +123,13 @@ public class TicTacToeView extends View {
     // Convert dp to pixels
     public int dp(int dp) {
         DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
-        int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        return px;
+        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
     }
 
     private float mX, mY;
     private static final float TOUCH_TOLERANCE = 4;
 
-    public boolean onTouchEvent(MotionEvent event) {
+    public boolean onTouchEvent(@NonNull MotionEvent event) {
         // Get the coordinates of the touch event.
         float eventX = event.getX();
         float eventY = event.getY();
@@ -166,7 +166,7 @@ public class TicTacToeView extends View {
                         @Override
                         public void onFinish() {
                             if (System.currentTimeMillis() > lastDrawn + 1500) {
-                                Toast.makeText(mContext, "Processing...", Toast.LENGTH_LONG).show();
+                                Toast.makeText(mContext, "Processing your move...", Toast.LENGTH_LONG).show();
                                 canDraw = false;
                                 new Thread(new Runnable() {
                                     @Override
@@ -182,7 +182,7 @@ public class TicTacToeView extends View {
                                                 invalidate();
                                             }
                                         });
-                                        saveBitmap(board, "board");
+                                        //saveBitmap(board, "board");
                                         processMove();
                                         if (playerTurn == 0) playerTurn = 1;
                                         else if (playerTurn == 1) playerTurn = 0;
@@ -212,11 +212,13 @@ public class TicTacToeView extends View {
         Bitmap oldBmp = oldboard.copy(Bitmap.Config.ARGB_8888, true);
         Utils.bitmapToMat(oldBmp, oldBoard);
         Utils.matToBitmap(oldBoard, oldBmp);
+        oldBmp.recycle();
 
         Mat newBoard = new Mat();
         Bitmap bmp = board.copy(Bitmap.Config.ARGB_8888, true);
         Utils.bitmapToMat(bmp, newBoard);
         Utils.matToBitmap(newBoard, bmp);
+        bmp.recycle();
 
         final Mat move = new Mat(newBoard.size(), CvType.CV_8UC3);
         Core.absdiff(oldBoard, newBoard, move);
@@ -239,7 +241,7 @@ public class TicTacToeView extends View {
 
         final Bitmap moveBmp = Bitmap.createBitmap(diffMat.cols(), diffMat.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(diffMat, moveBmp);
-        saveBitmap(moveBmp, "move");
+        moveBmp.recycle();
 
         Scalar white = new Scalar(255, 255, 255);
 
@@ -247,8 +249,6 @@ public class TicTacToeView extends View {
         Mat mHierarchy = new Mat();
         Imgproc.findContours(diffMat, contours, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
         Mat contourMap = Mat.zeros(diffMat.size(), CvType.CV_8UC3);
-
-        final Bitmap contourBmp = Bitmap.createBitmap(contourMap.cols(), contourMap.rows(), Bitmap.Config.ARGB_8888);
 
         int biggestContourIndex = biggestContourIndex(contours);
         for (int i = 0; i < contours.size(); i++) {
@@ -287,10 +287,18 @@ public class TicTacToeView extends View {
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(mContext, "Draw your shapes within a single cell. " +
-                                            "Restarting game...",
+                            if (paths.size() > 0) {
+                                undonePaths.add(paths.remove(paths.size() - 1));
+                                invalidate();
+                            }
+                            board = oldboard.copy(Bitmap.Config.ARGB_8888, true);
+                            mCanvas = new Canvas(board);
+
+                            if (playerTurn == 0) playerTurn = 1;
+                            else if (playerTurn == 1) playerTurn = 0;
+
+                            Toast.makeText(mContext, "Try drawing your shapes within a single cell.",
                                     Toast.LENGTH_LONG).show();
-                            ((MainActivity) mContext).restart();
                         }
                     });
                     return;
@@ -302,29 +310,22 @@ public class TicTacToeView extends View {
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
-                    //path = new Path();
-                    //paths.clear();
-                    /*if (paths.size() > 0) {
+                    if (paths.size() > 0) {
                         undonePaths.add(paths.remove(paths.size() - 1));
                         invalidate();
                     }
                     board = oldboard.copy(Bitmap.Config.ARGB_8888, true);
+                    mCanvas = new Canvas(board);
 
                     if (playerTurn == 0) playerTurn = 1;
-                    else if (playerTurn == 1) playerTurn = 0;*/
+                    else if (playerTurn == 1) playerTurn = 0;
 
-                    ((MainActivity) mContext).restart();
-                    Toast.makeText(mContext, "This shape was not identified, game restarting",
+                    Toast.makeText(mContext, "Shape not identified. Try again!",
                             Toast.LENGTH_LONG).show();
-
-
                 }
             });
             return;
         }
-
-        Utils.matToBitmap(contourMap, contourBmp);
-        saveBitmap(contourBmp, "contours");
 
         MatOfPoint allContours = new MatOfPoint();
         List<Point> contourPts = new ArrayList<>();
@@ -344,6 +345,8 @@ public class TicTacToeView extends View {
                     @Override
                     public void run() {
                         ((MainActivity) mContext).updatePlayerShapes(playerTurn, shapeMap, moveShape);
+                        Toast.makeText(mContext, shapeMap.get(playerShape[playerTurn]) + " recognized",
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
                 oldboard = board.copy(Bitmap.Config.ARGB_8888, true);
@@ -374,19 +377,17 @@ public class TicTacToeView extends View {
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
-                        /*if (playerTurn == 0) playerTurn = 1;
+                        if (playerTurn == 0) playerTurn = 1;
                         else if (playerTurn == 1) playerTurn = 0;
 
-                        //path = new Path();
-                        //paths.clear();
                         if (paths.size() > 0) {
                             undonePaths.add(paths.remove(paths.size() - 1));
                             invalidate();
                         }
-                        board = oldboard.copy(Bitmap.Config.ARGB_8888, true);*/
+                        board = oldboard.copy(Bitmap.Config.ARGB_8888, true);
+                        mCanvas = new Canvas(board);
 
-                        ((MainActivity) mContext).restart();
-                        Toast.makeText(mContext, "This shape was not identified. Restarting game...",
+                        Toast.makeText(mContext, "Shape not identified. Try again!",
                                 Toast.LENGTH_LONG).show();
                     }
                 });
@@ -428,25 +429,18 @@ public class TicTacToeView extends View {
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
-                        /*if (playerTurn == 0) playerTurn = 1;
+                        if (playerTurn == 0) playerTurn = 1;
                         else if (playerTurn == 1) playerTurn = 0;
 
-                        //path = new Path();
-                        //paths.clear();
                         if (paths.size() > 0) {
                             undonePaths.add(paths.remove(paths.size() - 1));
                             invalidate();
                         }
-                        board = oldboard.copy(Bitmap.Config.ARGB_8888, true);*/
-                        int tempTurn = playerTurn;
-                        //if (playerTurn == 0) tempTurn = 1;
-                        //else if (playerTurn == 1) tempTurn = 0;
-                        if (mode == 0) tempTurn = 0;
+                        board = oldboard.copy(Bitmap.Config.ARGB_8888, true);
+                        mCanvas = new Canvas(board);
 
-                        Toast.makeText(mContext, "Move not recognized as a " +
-                                        shapeMap.get(playerShape[tempTurn]) + ". Restarting game...",
-                                Toast.LENGTH_LONG).show();
-                        ((MainActivity) mContext).restart();
+                        Toast.makeText(mContext, shapeMap.get(playerShape[playerTurn]) +
+                                "not recognized. Try again!", Toast.LENGTH_SHORT).show();
                     }
                 });
                 return;
@@ -656,9 +650,9 @@ public class TicTacToeView extends View {
         Rect cogRect = new Rect(new Point(cog.x - w, cog.y - h), new Point(cog.x + w, cog.y + h));
         Core.rectangle(m, cogRect.tl(), cogRect.br(), green);
 
-        Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        /*Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bmp);
-        saveBitmap(bmp, "bounding+");
+        saveBitmap(bmp, "bounding+");*/
 
         int count = 0;
         for (Point p : convexPoints) {
@@ -684,9 +678,9 @@ public class TicTacToeView extends View {
             Core.rectangle(m, blRect.tl(), blRect.br(), green);
             Core.rectangle(m, brRect.tl(), brRect.br(), green);
 
-            bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+            /*bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(m, bmp);
-            saveBitmap(bmp, "bounding+");
+            saveBitmap(bmp, "bounding+");*/
 
             for (Point p : convexPoints) {
                 if (p.inside(ulRect) || p.inside(urRect) || p.inside(blRect) || p.inside(brRect)) {
@@ -716,9 +710,9 @@ public class TicTacToeView extends View {
         Rect cogRect = new Rect(new Point(cog.x - w / 4, cog.y - h / 4), new Point(cog.x + w / 4, cog.y + h / 4));
         Core.rectangle(m, cogRect.tl(), cogRect.br(), green);
 
-        Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        /*Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bmp);
-        saveBitmap(bmp, "boundingX");
+        saveBitmap(bmp, "boundingX");*/
 
         int count = 0;
         for (Point p : convexPoints) {
@@ -745,9 +739,9 @@ public class TicTacToeView extends View {
             Core.rectangle(m, tMid.tl(), tMid.br(), green);
             Core.rectangle(m, bMid.tl(), bMid.br(), green);
 
-            bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+            /*bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(m, bmp);
-            saveBitmap(bmp, "boundingX");
+            saveBitmap(bmp, "boundingX");*/
 
             for (Point p : convexPoints) {
                 if (p.inside(lMid) || p.inside(rMid) || p.inside(tMid) || p.inside(bMid)) {
@@ -799,7 +793,6 @@ public class TicTacToeView extends View {
 
             Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(m, bmp);
-            saveBitmap(bmp, "boundingTri");
 
             for (Point p : allPoints) {
                 if (p.inside(ulRect))
@@ -811,7 +804,6 @@ public class TicTacToeView extends View {
 
         Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bmp);
-        saveBitmap(bmp, "boundingTri");
 
         boolean br = false, bl = false, mid = false;
 
@@ -826,7 +818,7 @@ public class TicTacToeView extends View {
 
     public boolean recognizeCircle(Point[] convexPoints, Mat m, MatOfPoint contours, boolean alreadyRecognized) {
 
-        if (convexPoints.length < 21) return false;
+        if (convexPoints.length < 15) return false;
 
         Scalar blue = new Scalar(0, 0, 255, 255);
         Scalar green = new Scalar(0, 255, 0, 255);
@@ -851,9 +843,9 @@ public class TicTacToeView extends View {
         if (alreadyRecognized) div = 5;
         Core.circle(m, cog, w / div, green);
 
-        Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        /*Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bmp);
-        saveBitmap(bmp, "boundingCircle");
+        saveBitmap(bmp, "boundingCircle");*/
 
         Point[] allPoints = contours.toArray();
         for (Point p : allPoints) {
@@ -894,7 +886,6 @@ public class TicTacToeView extends View {
 
         Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bmp);
-        saveBitmap(bmp, "boundingSquare");
 
         Point[] allPoints = contours.toArray();
         for (Point p : allPoints) {
@@ -927,7 +918,6 @@ public class TicTacToeView extends View {
 
         Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bmp);
-        saveBitmap(bmp, "boundingArrow");
 
         int count = 0;
         for (Point p : convexPoints) {
@@ -969,9 +959,9 @@ public class TicTacToeView extends View {
         Core.rectangle(m, bottomMid.tl(), bottomMid.br(), green);
         Core.rectangle(m, upperMid.tl(), upperMid.br(), green);
 
-        Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        /*Bitmap bmp = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(m, bmp);
-        saveBitmap(bmp, "boundingHeart");
+        saveBitmap(bmp, "boundingHeart");*/
 
         boolean ur = false, ul = false, bMid = false, uMid = false;
 
@@ -1044,7 +1034,7 @@ public class TicTacToeView extends View {
                 // filter out points that are very close to existing points
                 boolean add = true;
                 for (int a = 0; a < points.size(); a++) {
-                    if (distance(points.get(a), p) < 8) {
+                    if (distance(points.get(a), p) < 7) {
                         add = false;
                     }
                 }

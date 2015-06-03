@@ -19,7 +19,7 @@
         android:layout_height="100dp"
         android:id="@+id/shape_list"
         android:layout_gravity="left|top"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="90dp"
         android:layout_marginLeft="16dp"
         android:layout_marginRight="8dp"
         android:background="@drawable/shapes_landscape"

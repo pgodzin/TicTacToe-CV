@@ -112,6 +112,7 @@ public class MainActivity extends ActionBarActivity {
 
         tttView.b.init();
 
+        Toast.makeText(getApplicationContext(), "Restarting...", Toast.LENGTH_SHORT).show();
         tttView.draw(tttView.mCanvas);
         tttView.invalidate();
     }

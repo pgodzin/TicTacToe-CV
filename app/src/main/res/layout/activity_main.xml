@@ -6,14 +6,12 @@
     tools:context="com.example.app.FullscreenActivity">
 
     <view
-        android:layout_width="360dp"
-        android:layout_height="360dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         class="com.example.pgodzin.tictactoe.TicTacToeView"
         android:id="@+id/ttt"
         android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="32dp"
-        android:layout_marginLeft="24dp"
-        android:layout_marginRight="8dp" />
+        android:layout_margin="16dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -30,7 +28,7 @@
         android:layout_height="50dp"
         android:id="@+id/shape_list"
         android:layout_gravity="center_horizontal|top"
-        android:layout_marginTop="36dp"
+        android:layout_marginTop="52dp"
         android:background="@drawable/shapes"
         android:contentDescription="@string/poss_move_shapes"
         android:layout_marginLeft="4dp" />

@@ -81,14 +81,16 @@ public class MainActivity extends ActionBarActivity {
 
     public void restart() {
         TicTacToeView tttView = (TicTacToeView) findViewById(R.id.ttt);
-        tttView.board = Bitmap.createBitmap(dp(360), dp(360), Bitmap.Config.ARGB_8888);
+        int w = tttView.w;
+        int dpw = pxFromDp(w);
+        tttView.board = Bitmap.createBitmap(dpw, dpw, Bitmap.Config.ARGB_8888);
         tttView.mCanvas.setBitmap(tttView.board);
         tttView.mCanvas.drawColor(0xFFFFFFFF);
         tttView.paint.setColor(Color.BLACK);
-        tttView.mCanvas.drawLine(dp(120), dp(10), dp(120), dp(350), tttView.paint);
-        tttView.mCanvas.drawLine(dp(240), dp(10), dp(240), dp(350), tttView.paint);
-        tttView.mCanvas.drawLine(dp(10), dp(120), dp(350), dp(120), tttView.paint);
-        tttView.mCanvas.drawLine(dp(10), dp(240), dp(350), dp(240), tttView.paint);
+        tttView.mCanvas.drawLine(pxFromDp(w / 3), 0, pxFromDp(w / 3), dpw, tttView.paint);
+        tttView.mCanvas.drawLine(pxFromDp(2 * w / 3), 0, pxFromDp(2 * w / 3), dpw, tttView.paint);
+        tttView.mCanvas.drawLine(0, pxFromDp(w / 3), dpw, pxFromDp(w / 3), tttView.paint);
+        tttView.mCanvas.drawLine(0, pxFromDp(2 * w / 3), dpw, pxFromDp(2 * w / 3), tttView.paint);
         tttView.oldboard = tttView.board.copy(Bitmap.Config.ARGB_8888, true);
 
         tttView.path.reset();
@@ -117,11 +119,8 @@ public class MainActivity extends ActionBarActivity {
         tttView.invalidate();
     }
 
-    // Convert dp to pixels
-    public int dp(int dp) {
-        DisplayMetrics displayMetrics = getApplicationContext().getResources().getDisplayMetrics();
-        int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        return px;
+    public int pxFromDp(final int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
     }
 
 }

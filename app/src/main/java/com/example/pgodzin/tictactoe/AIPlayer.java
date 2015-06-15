@@ -21,7 +21,7 @@ public class AIPlayer {
     Cell.Content oppShape;   // opponent's Cell.Content
     Board b;
     Canvas mCanvas;
-    int playerShape;
+    int playerShape, size;
     Paint paint;
     Context mContext;
     boolean firstMove;
@@ -29,10 +29,11 @@ public class AIPlayer {
     /**
      * Constructor with the given game board
      */
-    public AIPlayer(Board board, Cell.Content myShape, Cell.Content oppShape, int playerShape,
+    public AIPlayer(Board board, int size, Cell.Content myShape, Cell.Content oppShape, int playerShape,
                     Canvas mCanvas, Paint paint, Context context, boolean firstMove) {
         cells = board.cells;
         b = board;
+        this.size = size;
         this.myShape = myShape;
         this.oppShape = oppShape;
         this.mCanvas = mCanvas;
@@ -51,22 +52,19 @@ public class AIPlayer {
         int[] result = minimax(depth, myShape, -Integer.MAX_VALUE, Integer.MAX_VALUE); // depth, max turn
         b.cells[result[1]][result[2]].content = myShape;
         if (playerShape == 2) {
-            mCanvas.drawCircle(dp(60 + 120 * result[2]), dp(60 + 120 * result[1]), dp(40), paint);
+            mCanvas.drawCircle(size / 6 + size / 3 * result[2], size / 6 + size / 3 * result[1], size / 9, paint);
         } else if (playerShape == 1) {
-            mCanvas.drawLine(dp(20 + 120 * result[2]), dp(20 + 120 * result[1]),
-                    dp(100 + 120 * result[2]), dp(100 + +120 * result[1]), paint);
-            mCanvas.drawLine(dp(20 + 120 * result[2]), dp(100 + 120 * result[1]),
-                    dp(100 + 120 * result[2]), dp(20 + +120 * result[1]), paint);
+            mCanvas.drawLine(pxFromDp(20) + size / 3 * result[2], pxFromDp(20) + size / 3 * result[1],
+                    size / 3 - pxFromDp(20) + size / 3 * result[2], size / 3 - pxFromDp(20) + size / 3 * result[1], paint);
+            mCanvas.drawLine(pxFromDp(20) + size / 3 * result[2], size / 3 - pxFromDp(20) + size / 3 * result[1],
+                    size / 3 - pxFromDp(20) + size / 3 * result[2], pxFromDp(20) + size / 3 * result[1], paint);
         }
         b.currentRow = result[1];
         b.currentCol = result[2];
     }
 
-    // Convert dp to pixels
-    public int dp(int dp) {
-        DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
-        int px = Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-        return px;
+    public int pxFromDp(final int dp) {
+        return (int) (dp * mContext.getResources().getDisplayMetrics().density);
     }
 
     /**

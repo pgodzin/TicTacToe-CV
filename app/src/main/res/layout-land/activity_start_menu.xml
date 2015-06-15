@@ -2,6 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/startmenu"
     tools:context="com.example.pgodzin.tictactoe.StartMenuActivity"
     android:orientation="horizontal">
 
@@ -12,25 +13,4 @@
         android:background="@drawable/banner"
         android:contentDescription="@string/banner" />
 
-    <Button
-        android:layout_width="200dp"
-        android:layout_height="60dp"
-        android:id="@+id/vs_computer"
-        android:layout_marginTop="80dp"
-        android:layout_marginLeft="210dp"
-        android:alpha="0"
-        android:clickable="true"
-        android:shadowColor="@android:color/transparent"
-        android:singleLine="true" />
-
-    <Button
-        android:layout_width="200dp"
-        android:layout_height="60dp"
-        android:id="@+id/multiplayer"
-        android:layout_marginTop="160dp"
-        android:layout_marginLeft="210dp"
-        android:alpha="0"
-        android:clickable="true"
-        android:shadowColor="@android:color/transparent"
-        android:singleLine="true" />
 </RelativeLayout>

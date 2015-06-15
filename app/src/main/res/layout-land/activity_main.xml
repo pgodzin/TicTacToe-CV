@@ -2,7 +2,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#ffffff">
+    android:background="#ffffff"
+    tools:context="com.example.app.FullscreenActivity">
+
+    <view
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        class="com.example.pgodzin.tictactoe.TicTacToeView"
+        android:id="@+id/ttt"
+        android:layout_gravity="center_vertical|right"
+        android:layout_margin="16dp" />
 
     <TextView
         android:layout_width="180dp"
@@ -23,15 +32,7 @@
         android:layout_marginLeft="16dp"
         android:layout_marginRight="8dp"
         android:background="@drawable/shapes_landscape"
-        android:contentDescription="@string/poss_move_shapes"/>
-
-    <view
-        android:layout_width="360dp"
-        android:layout_height="360dp"
-        class="com.example.pgodzin.tictactoe.TicTacToeView"
-        android:id="@+id/ttt"
-        android:layout_gravity="right|top"
-        android:layout_marginBottom="4dp" />
+        android:contentDescription="@string/poss_move_shapes" />
 
     <Button
         android:layout_width="wrap_content"
@@ -50,7 +51,7 @@
         android:layout_margin="8dp"
         android:visibility="gone"
         android:text="@string/p1_shape"
-        android:textSize="24sp"/>
+        android:textSize="24sp" />
 
     <TextView
         android:layout_width="wrap_content"

@@ -1,4 +1,9 @@
+.idea
+*.iml
 .gradle
+build/
+libraries/opencv/build
+
 /local.properties
 /.idea/workspace.xml
 /.idea/libraries
